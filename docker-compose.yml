@@ -1,0 +1,28 @@
+# Zeek Passive Capture -- Ground-Truth-Pilot fuer die Bachelorarbeit (Kap. 3.3.1)
+# Separater Stack, unabhaengig vom Condition-Monitoring-Stack.
+#
+# Deploy als Portainer GIT-STACK (Build method: Repository), analog zum
+# CM-Stack (siehe dessen documentation/NAS_DEPLOY.md):
+#   - local.zeek kommt aus dem Repo-Checkout  -> relativer Mount (./local.zeek)
+#   - conn.log  -> absoluter NAS-Pfad, damit sie persistent und in File Station
+#     lesbar bleibt (Portainers Checkout-Workdir ist ephemer)
+#
+# VOR dem Deploy in DSM File Station anlegen:
+#   /volume1/docker/zeek-capture/logs      (Ordner-Rechte: Lesen/Schreiben)
+# Interface-Default "any" -> kein Interface-Name noetig.
+
+services:
+  zeek:
+    image: zeek/zeek:latest          # fuer die Endfassung feste Version pinnen (z. B. zeek/zeek:7.0)
+    container_name: zeek-capture
+    network_mode: host               # liest die physische NAS-Netzwerkkarte mit
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    restart: unless-stopped
+    working_dir: /logs
+    volumes:
+      - ./local.zeek:/config/local.zeek:ro          # aus dem Git-Checkout
+      - /volume1/docker/zeek-capture/logs:/logs      # persistent, in File Station lesbar
+    entrypoint: ["zeek"]
+    command: ["-i", "${CAPTURE_IFACE:-any}", "/config/local.zeek"]
