@@ -13,3 +13,17 @@ event zeek_init()
     Log::disable_stream(X509::LOG);
     Log::disable_stream(Weird::LOG);
 }
+
+
+# NIC-Checksum-Offloading: Pruefsummen ignorieren, sonst verwirft Zeek
+# alle vom NAS selbst gesendeten Pakete (conn_state SH/SHR statt SF).
+redef ignore_checksums = T;
+
+# Nur conn.log behalten - Whitelist statt Blacklist, damit auch
+# ntp/ssh/snmp/syslog etc. gar nicht erst entstehen (Datensparsamkeit).
+event zeek_init() &priority=-10
+	{
+	for ( id in Log::active_streams )
+		if ( id != Conn::LOG && id != Reporter::LOG && id != PacketFilter::LOG )
+			Log::disable_stream(id);
+	}
